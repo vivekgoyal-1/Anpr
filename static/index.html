@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plate Recognition System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+      <h1 class="text-2xl font-bold">Vehicle Number Plate Recognition System</h1>
+    </header>
+    
+    <main class="container mx-auto p-4 flex-grow">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Camera Feed Section -->
+        <div class="lg:col-span-2">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Live Camera Feed</h2>
+            <div id="camera-container" class="relative rounded-md overflow-hidden bg-black">
+              <div id="camera-placeholder" class="w-full h-[480px] bg-gray-900 flex items-center justify-center text-white">
+                Click "Start Camera" button below to enable camera
+              </div>
+              <video id="webcam" class="w-full h-[480px] hidden"></video>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+              <button id="start-camera" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none">
+                Start Camera
+              </button>
+              <button id="capture-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none" disabled>
+                Detect Plate
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Results and Actions Section -->
+        <div class="space-y-6">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Detection Results</h2>
+            <div id="results-container" class="flex items-center justify-center h-64 bg-gray-50 rounded-md border border-gray-200">
+              <p class="text-gray-500">No detection results yet</p>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Actions</h2>
+            <div id="actions-container" class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/simplified-demo.html" class="bg-green-500 text-white p-3 rounded text-center hover:bg-green-600">
+          Demo Mode
+        </a>
+        <a href="/rtmp-hls-player.html" class="bg-blue-500 text-white p-3 rounded text-center hover:bg-blue-600">
+          Video Stream Mode
+        </a>
+        <a href="/api/health" target="_blank" class="bg-gray-500 text-white p-3 rounded text-center hover:bg-gray-600">
+          Check API Status
+        </a>
+      </div>
+    </main>
+    
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+      <div class="container mx-auto text-center">
+        <p>Vehicle Number Plate Recognition System - © 2025</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const startButton = document.getElementById('start-camera');
+      const captureButton = document.getElementById('capture-button');
+      const cameraPlaceholder = document.getElementById('camera-placeholder');
+      const webcam = document.getElementById('webcam');
+      const resultsContainer = document.getElementById('results-container');
+      const actionsContainer = document.getElementById('actions-container');
+      
+      let stream = null;
+      let isProcessing = false;
+      
+      // Start/stop camera
+      startButton.addEventListener('click', async () => {
+        if (stream) {
+          webcam.srcObject = null;
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+          webcam.classList.add('hidden');
+          cameraPlaceholder.classList.remove('hidden');
+          startButton.textContent = 'Start Camera';
+          captureButton.disabled = true;
+          return;
+        }
+        
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          webcam.srcObject = stream;
+          webcam.play();
+          webcam.classList.remove('hidden');
+          cameraPlaceholder.classList.add('hidden');
+          startButton.textContent = 'Stop Camera';
+          captureButton.disabled = false;
+        } catch (err) {
+          console.error('Error accessing camera:', err);
+          alert('Failed to access camera. Please check camera permissions.');
+        }
+      });
+      
+      // Capture and process frame
+      captureButton.addEventListener('click', async () => {
+        if (!stream || isProcessing) return;
+        
+        isProcessing = true;
+        captureButton.disabled = true;
+        
+        // Loading indicator
+        resultsContainer.innerHTML = `
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        `;
+        
+        try {
+          // Create canvas to capture frame
+          const canvas = document.createElement('canvas');
+          canvas.width = webcam.videoWidth;
+          canvas.height = webcam.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(webcam, 0, 0);
+          
+          // Get image data
+          const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
+          
+          // Process frame
+          const response = await fetch('/api/process-frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: imageData })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          console.log('Received result:', result);
+          
+          // Display results
+          displayResults(result);
+          updateActions(result);
+          
+        } catch (err) {
+          console.error('Error processing frame:', err);
+          resultsContainer.innerHTML = `
+            <div class="p-4 bg-red-100 text-red-700 rounded-md">
+              Failed to process video frame: ${err.message}
+            </div>
+          `;
+        } finally {
+          isProcessing = false;
+          captureButton.disabled = false;
+        }
+      });
+      
+      // Display detection results
+      function displayResults(result) {
+        const { plateNumber, confidence, isRegistered, vehicleInfo, timestamp } = result;
+        
+        resultsContainer.innerHTML = `
+          <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h3 class="font-bold text-lg mb-2">Detected Plate</h3>
+              <div class="flex items-center justify-center p-4 bg-white rounded-md border border-gray-300">
+                <span class="font-mono text-xl font-bold">${plateNumber || 'No plate detected'}</span>
+              </div>
+              
+              ${plateNumber ? `
+                <div class="mt-2 text-sm text-gray-600">
+                  <span>Confidence: ${Math.round(confidence * 100)}%</span>
+                  <span> • </span>
+                  <span>Detected at: ${new Date(timestamp).toLocaleTimeString()}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="${isRegistered ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'} p-4 rounded-md">
+              <h3 class="font-bold text-lg mb-2">Database Match</h3>
+              ${isRegistered ? `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-green-700">✓ Vehicle is registered</p>
+                  ${vehicleInfo ? `
+                    <div class="mt-2 space-y-1">
+                      <p><span class="font-medium">Owner:</span> ${vehicleInfo.ownerName}</p>
+                      <p><span class="font-medium">Contact:</span> ${vehicleInfo.contactInfo}</p>
+                      ${vehicleInfo.additionalInfo ? `
+                        <p><span class="font-medium">Additional Info:</span> ${vehicleInfo.additionalInfo}</p>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-red-700">✗ Vehicle not found in database</p>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Update action panel
+      function updateActions(result) {
+        const { plateNumber, isRegistered } = result;
+        
+        if (!plateNumber) {
+          actionsContainer.innerHTML = `
+            <div class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          `;
+          return;
+        }
+        
+        if (isRegistered) {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Registered</span>
+              </div>
+              
+              <button
+                class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                onclick="alert('Vehicle details accessed')"
+              >
+                View Full Details
+              </button>
+              
+              <button
+                class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors"
+                onclick="alert('Log created for plate number: ${plateNumber}')"
+              >
+                Log Entry
+              </button>
+            </div>
+          `;
+        } else {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Not Registered</span>
+              </div>
+              
+              <button
+                id="add-vehicle-btn"
+                class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Add to Database
+              </button>
+              
+              <button
+                class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
+                onclick="alert('Alert created for unregistered vehicle: ${plateNumber}')"
+              >
+                Create Alert
+              </button>
+            </div>
+          `;
+          
+          // Add vehicle form event
+          document.getElementById('add-vehicle-btn').addEventListener('click', () => {
+            showAddVehicleForm(plateNumber);
+          });
+        }
+      }
+      
+      // Show add vehicle form
+      function showAddVehicleForm(plateNumber) {
+        actionsContainer.innerHTML = `
+          <form id="add-vehicle-form" class="space-y-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
+              <input
+                type="text"
+                value="${plateNumber}"
+                disabled
+                class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Owner Name*</label>
+              <input
+                type="text"
+                id="ownerName"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Contact Info*</label>
+              <input
+                type="text"
+                id="contactInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Additional Info</label>
+              <textarea
+                id="additionalInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                rows="2"
+              ></textarea>
+            </div>
+            
+            <div class="flex space-x-2">
+              <button
+                type="submit"
+                class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Save
+              </button>
+              
+              <button
+                type="button"
+                id="cancel-add-vehicle"
+                class="flex-1 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        `;
+        
+        // Form submit event
+        document.getElementById('add-vehicle-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const ownerName = document.getElementById('ownerName').value;
+          const contactInfo = document.getElementById('contactInfo').value;
+          const additionalInfo = document.getElementById('additionalInfo').value;
+          
+          if (!ownerName || !contactInfo) {
+            alert('Owner name and contact information are required.');
+            return;
+          }
+          
+          try {
+            const response = await fetch('/api/vehicles', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                plateNumber,
+                ownerInfo: {
+                  ownerName,
+                  contactInfo,
+                  additionalInfo
+                }
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            alert(`Vehicle with plate ${plateNumber} added successfully!`);
+            
+            // Refresh detection to update UI
+            captureButton.click();
+            
+          } catch (err) {
+            console.error('Error adding vehicle:', err);
+            alert('Failed to add vehicle to database: ' + err.message);
+          }
+        });
+        
+        // Cancel button event
+        document.getElementById('cancel-add-vehicle').addEventListener('click', () => {
+          updateActions({ plateNumber, isRegistered: false });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

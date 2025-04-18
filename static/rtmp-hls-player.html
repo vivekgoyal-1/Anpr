@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTMP Stream Plate Recognition - HLS Player</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Video.js CSS -->
+  <link href="https://vjs.zencdn.net/7.15.4/video-js.css" rel="stylesheet">
+  <!-- HLS plugin for Video.js -->
+  <script src="https://vjs.zencdn.net/7.15.4/video.min.js"></script>
+  <script src="https://unpkg.com/@videojs/http-streaming@2.14.2/dist/videojs-http-streaming.min.js"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+      <h1 class="text-2xl font-bold">Vehicle Number Plate Recognition - Video Stream Player</h1>
+    </header>
+    
+    <main class="container mx-auto p-4 flex-grow">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Video Stream Section -->
+        <div class="lg:col-span-2">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Video Stream</h2>
+            <div id="video-container" class="relative rounded-md overflow-hidden bg-black">
+              <!-- Video.js player -->
+              <video
+                id="hls-player"
+                class="video-js vjs-default-skin vjs-big-play-centered"
+                controls
+                preload="auto"
+                width="100%"
+                height="480"
+                poster="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/9sAQwEDBAQFBAUJBQUJFA0LDRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU/8AAEQgAMAAwAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A+t0X92PpX49/FHxH4g8D/ttfGvXfDGqX2i6ta+MdYMN5ZTtDNHm6fBDKQcEZHBr9hkXMYr4j+Jn7Adr8Qfjz8QfHkPi6bSZvFOtXWqfZJLITLH5sjSbS+9Sdm7BwOcc1lUUvZt22Z0Yaoqc2n0Z+dWkfGb48fGP4j+D/AAz4k+JfiefVPFWqadpkcM+qPJCpuZ0h3hGO0gByMgE9hmveNX/Yd+M/wz1bwz8RPHt9o39g+GfFej6Pc6foN5Pa3l/HdXkUTG3MylGKLI7AsoHA5JFfoF8MP2H/AIZfDvxtF4sj0+81C+guIrqHTru4M1hbTRsCkiQgDIUgHGVPAIJGRXrdxpVpcWk1u8EbRyqUcEDlSMH+VcsKc4JqzO2eIpzlGSS3PmH9o3WfD3wb/Zg1HQfCfg86LYXWn2FmqWOkraRXkkkCMzNGADIG25fJbLY5r87/AIf/ALGvx1+MWs+DPF+hWsA0vQ/EWj6qLC41aHzZoLO8jmkAXdt3YjOMnrX7FWfw90HTJY5YdMgEkTB0YgEqwOQaZefDDQ7vW4NXkteNPuReWUQIEauu1c47bRjHt1rWeHk5KVjKljqcYON9z8wvgp+xP+034X+Mfh/XfE+h2tr4fs9UhuNQuTr0BkhgDZlKp97cF3Y9cV+o8SbIwPau3k+D+ly3Ud0/2lnRgylZ2AJHQkDvXQw+C9OSNY/s0ZVRgZXJxVU6Mou9yK+MpzVrL8T5X8P+JviDpHhx5ND8NaP4gvUlkWGC7u3t1ZN5AJZUbgZGTj6Gvk74e/B/42+NPE2t67N8ONe8G3GteJdX1S+1HU7q3ubO+nluZGnljimDvH5jOTg/dJx0r9Kv+EJ0zzvN+yJuznd2z64psvgbSJrmS5a338McYb5eMY4xx0q5UG430saQxcVGzinp2P/Z"
+                data-setup='{}'>
+                <p class="vjs-no-js">
+                  To view this video please enable JavaScript, and consider upgrading to a
+                  web browser that supports HTML5 video
+                </p>
+              </video>
+              
+              <!-- Canvas for frame capture (hidden) -->
+              <canvas id="capture-canvas" class="hidden"></canvas>
+            </div>
+            
+            <div class="flex justify-between items-center mt-4">
+              <div class="space-x-2">
+                <input 
+                  id="rtmp-url" 
+                  type="text" 
+                  value="https://ireplay.tv/test/blender.m3u8" 
+                  class="px-4 py-2 border border-gray-300 rounded w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <button 
+                  id="connect-button"
+                  class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none"
+                >
+                  Start Stream
+                </button>
+              </div>
+              
+              <button 
+                id="capture-button"
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
+                disabled
+              >
+                Detect Plate
+              </button>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-500">
+              <p>This player can play HLS streams directly in the browser without conversion.</p>
+              <p id="stream-status" class="mt-1">Stream Status: Not connected</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Results and Actions Section -->
+        <div class="space-y-6">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Detection Results</h2>
+            <div id="results-container" class="flex items-center justify-center h-64 bg-gray-50 rounded-md border border-gray-200">
+              <p class="text-gray-500">No detection results yet</p>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Actions</h2>
+            <div id="actions-container" class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Auto Processing</h2>
+            <div class="p-4 bg-gray-50 rounded-md border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <input type="checkbox" id="auto-detect" class="mr-2">
+                  <label for="auto-detect">Process frames automatically</label>
+                </div>
+                <select id="interval-select" class="p-2 border border-gray-300 rounded">
+                  <option value="1000">Every 1 second</option>
+                  <option value="3000" selected>Every 3 seconds</option>
+                  <option value="5000">Every 5 seconds</option>
+                  <option value="10000">Every 10 seconds</option>
+                </select>
+              </div>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="font-medium">Detections:</span>
+                  <span id="detection-count" class="ml-2">0</span>
+                </div>
+                <div>
+                  <span class="font-medium">Last detection:</span>
+                  <span id="last-detection-time" class="ml-2">N/A</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <a href="/" class="bg-blue-500 text-white p-3 rounded text-center hover:bg-blue-600">
+          Camera Mode
+        </a>
+        <a href="/simplified-demo.html" class="bg-green-500 text-white p-3 rounded text-center hover:bg-green-600">
+          Demo Mode
+        </a>
+        <a href="#" class="bg-gray-800 text-white p-3 rounded text-center font-bold">
+          RTMP Stream Mode
+        </a>
+        <a href="/api/health" target="_blank" class="bg-gray-500 text-white p-3 rounded text-center hover:bg-gray-600">
+          Check API Status
+        </a>
+      </div>
+    </main>
+    
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+      <div class="container mx-auto text-center">
+        <p>Vehicle Number Plate Recognition System - © 2025</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elements
+      const rtmpUrlInput = document.getElementById('rtmp-url');
+      const connectButton = document.getElementById('connect-button');
+      const captureButton = document.getElementById('capture-button');
+      const autoDetectCheckbox = document.getElementById('auto-detect');
+      const intervalSelect = document.getElementById('interval-select');
+      const resultsContainer = document.getElementById('results-container');
+      const actionsContainer = document.getElementById('actions-container');
+      const detectionCountElement = document.getElementById('detection-count');
+      const lastDetectionTimeElement = document.getElementById('last-detection-time');
+      const captureCanvas = document.getElementById('capture-canvas');
+      const streamStatusElement = document.getElementById('stream-status');
+      
+      // Initialize Video.js player
+      const player = videojs('hls-player', {
+        liveui: true,
+        responsive: true,
+        fluid: true
+      });
+      
+      // State
+      let isStreamConnected = false;
+      let isProcessing = false;
+      let detectionCount = 0;
+      let autoDetectInterval = null;
+      let streamStatusCheckInterval = null;
+      
+      // Start RTMP to HLS conversion
+      connectButton.addEventListener('click', async () => {
+        const rtmpUrl = rtmpUrlInput.value.trim();
+        
+        if (!rtmpUrl) {
+          alert('Please enter an RTMP URL');
+          return;
+        }
+        
+        if (isStreamConnected) {
+          // Disconnect
+          try {
+            clearInterval(streamStatusCheckInterval);
+            player.pause();
+            player.src('');
+            await fetch('/api/start-stream', {
+              method: 'DELETE'
+            });
+            
+            isStreamConnected = false;
+            connectButton.textContent = 'Start Stream';
+            captureButton.disabled = true;
+            streamStatusElement.textContent = 'Stream Status: Disconnected';
+            
+            if (autoDetectInterval) {
+              clearInterval(autoDetectInterval);
+              autoDetectInterval = null;
+              autoDetectCheckbox.checked = false;
+            }
+          } catch (error) {
+            console.error('Error disconnecting stream:', error);
+          }
+          
+          return;
+        }
+        
+        try {
+          streamStatusElement.textContent = 'Stream Status: Connecting...';
+          connectButton.disabled = true;
+          
+          // Play HLS stream directly
+          player.src({
+            src: rtmpUrl,
+            type: 'application/x-mpegURL'
+          });
+          
+          try {
+            await player.play();
+          } catch (e) {
+            console.warn('Autoplay prevented:', e);
+          }
+          
+          isStreamConnected = true;
+          connectButton.textContent = 'Stop Stream';
+          connectButton.disabled = false;
+          captureButton.disabled = false;
+          streamStatusElement.textContent = 'Stream Status: Connected';
+          
+          // Mock response since we're not using the server conversion anymore
+          const response = { ok: true };
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Server returned ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('Stream conversion started:', data);
+          
+          // No need for stream status interval as we play the HLS directly
+          // Just track the player state
+          player.on('playing', () => {
+            streamStatusElement.textContent = 'Stream Status: Playing';
+          });
+          
+          player.on('waiting', () => {
+            streamStatusElement.textContent = 'Stream Status: Buffering...';
+          });
+          
+          player.on('error', (e) => {
+            console.error('Player error:', e);
+            streamStatusElement.textContent = `Stream Status: Error - ${player.error().message}`;
+            
+            isStreamConnected = false;
+            connectButton.textContent = 'Start Stream';
+            connectButton.disabled = false;
+            captureButton.disabled = true;
+          });
+          
+        } catch (error) {
+          console.error('Error starting stream:', error);
+          streamStatusElement.textContent = `Stream Status: Error - ${error.message}`;
+          connectButton.disabled = false;
+        }
+      });
+      
+      // Auto detection toggle
+      autoDetectCheckbox.addEventListener('change', () => {
+        if (autoDetectCheckbox.checked) {
+          if (!isStreamConnected) {
+            autoDetectCheckbox.checked = false;
+            alert('Please connect to a stream first');
+            return;
+          }
+          
+          // Get interval
+          const interval = parseInt(intervalSelect.value);
+          
+          // Start auto detection
+          autoDetectInterval = setInterval(() => {
+            if (!isProcessing && isStreamConnected) {
+              captureAndProcess();
+            }
+          }, interval);
+          
+          console.log(`Auto detection started (interval: ${interval}ms)`);
+        } else {
+          // Stop auto detection
+          if (autoDetectInterval) {
+            clearInterval(autoDetectInterval);
+            autoDetectInterval = null;
+            console.log('Auto detection stopped');
+          }
+        }
+      });
+      
+      // Interval change
+      intervalSelect.addEventListener('change', () => {
+        if (autoDetectInterval) {
+          // Restart with new interval
+          clearInterval(autoDetectInterval);
+          
+          const interval = parseInt(intervalSelect.value);
+          autoDetectInterval = setInterval(() => {
+            if (!isProcessing && isStreamConnected) {
+              captureAndProcess();
+            }
+          }, interval);
+          
+          console.log(`Auto detection interval updated: ${interval}ms`);
+        }
+      });
+      
+      // Manual capture and process
+      captureButton.addEventListener('click', captureAndProcess);
+      
+      // Capture and process function
+      async function captureAndProcess() {
+        if (isProcessing || !isStreamConnected) return;
+        
+        isProcessing = true;
+        captureButton.disabled = true;
+        
+        // Loading indicator
+        resultsContainer.innerHTML = `
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        `;
+        
+        try {
+          // Prepare canvas for capture
+          captureCanvas.width = 640;
+          captureCanvas.height = 360;
+          const ctx = captureCanvas.getContext('2d');
+          
+          // In a real implementation, draw the video frame to the canvas
+          // For this demo version, we'll use a simple snapshot from the video
+          const videoElement = player.el().querySelector('video');
+          if (videoElement && videoElement.videoWidth > 0) {
+            ctx.drawImage(videoElement, 0, 0, captureCanvas.width, captureCanvas.height);
+            
+            // Get image data from canvas
+            const imageData = captureCanvas.toDataURL('image/jpeg').split(',')[1];
+            
+            // Process with server
+            const response = await fetch('/api/process-frame', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: imageData })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Received result:', result);
+            
+            // Update stats
+            detectionCount++;
+            detectionCountElement.textContent = detectionCount;
+            lastDetectionTimeElement.textContent = new Date().toLocaleTimeString();
+            
+            // Display results
+            displayResults(result);
+            updateActions(result);
+            
+          } else {
+            // Video not ready yet
+            throw new Error('Video not ready or no frames available');
+          }
+          
+        } catch (error) {
+          console.error('Error processing frame:', error);
+          resultsContainer.innerHTML = `
+            <div class="p-4 bg-red-100 text-red-700 rounded-md">
+              Failed to process video frame: ${error.message}
+            </div>
+          `;
+        } finally {
+          isProcessing = false;
+          captureButton.disabled = false;
+        }
+      }
+      
+      // Display detection results
+      function displayResults(result) {
+        const { plateNumber, confidence, isRegistered, vehicleInfo, timestamp } = result;
+        
+        resultsContainer.innerHTML = `
+          <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h3 class="font-bold text-lg mb-2">Detected Plate</h3>
+              <div class="flex items-center justify-center p-4 bg-white rounded-md border border-gray-300">
+                <span class="font-mono text-xl font-bold">${plateNumber || 'No plate detected'}</span>
+              </div>
+              
+              ${plateNumber ? `
+                <div class="mt-2 text-sm text-gray-600">
+                  <span>Confidence: ${Math.round(confidence * 100)}%</span>
+                  <span> • </span>
+                  <span>Detected at: ${new Date(timestamp).toLocaleTimeString()}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="${isRegistered ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'} p-4 rounded-md">
+              <h3 class="font-bold text-lg mb-2">Database Match</h3>
+              ${isRegistered ? `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-green-700">✓ Vehicle is registered</p>
+                  ${vehicleInfo ? `
+                    <div class="mt-2 space-y-1">
+                      <p><span class="font-medium">Owner:</span> ${vehicleInfo.ownerName}</p>
+                      <p><span class="font-medium">Contact:</span> ${vehicleInfo.contactInfo}</p>
+                      ${vehicleInfo.additionalInfo ? `
+                        <p><span class="font-medium">Additional Info:</span> ${vehicleInfo.additionalInfo}</p>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-red-700">✗ Vehicle not found in database</p>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Update action panel
+      function updateActions(result) {
+        const { plateNumber, isRegistered } = result;
+        
+        if (!plateNumber) {
+          actionsContainer.innerHTML = `
+            <div class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          `;
+          return;
+        }
+        
+        if (isRegistered) {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Registered</span>
+              </div>
+              
+              <button
+                class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                onclick="alert('Vehicle details accessed')"
+              >
+                View Full Details
+              </button>
+              
+              <button
+                class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors"
+                onclick="alert('Log created for plate number: ${plateNumber}')"
+              >
+                Log Entry
+              </button>
+            </div>
+          `;
+        } else {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Not Registered</span>
+              </div>
+              
+              <button
+                id="add-vehicle-btn"
+                class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Add to Database
+              </button>
+              
+              <button
+                class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
+                onclick="alert('Alert created for unregistered vehicle: ${plateNumber}')"
+              >
+                Create Alert
+              </button>
+            </div>
+          `;
+          
+          // Add vehicle form event
+          document.getElementById('add-vehicle-btn').addEventListener('click', () => {
+            showAddVehicleForm(plateNumber);
+          });
+        }
+      }
+      
+      // Show add vehicle form
+      function showAddVehicleForm(plateNumber) {
+        actionsContainer.innerHTML = `
+          <form id="add-vehicle-form" class="space-y-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
+              <input
+                type="text"
+                value="${plateNumber}"
+                disabled
+                class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Owner Name*</label>
+              <input
+                type="text"
+                id="ownerName"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Contact Info*</label>
+              <input
+                type="text"
+                id="contactInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Additional Info</label>
+              <textarea
+                id="additionalInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                rows="2"
+              ></textarea>
+            </div>
+            
+            <div class="flex space-x-2">
+              <button
+                type="submit"
+                class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Save
+              </button>
+              
+              <button
+                type="button"
+                id="cancel-add-vehicle"
+                class="flex-1 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        `;
+        
+        // Form submit event
+        document.getElementById('add-vehicle-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const ownerName = document.getElementById('ownerName').value;
+          const contactInfo = document.getElementById('contactInfo').value;
+          const additionalInfo = document.getElementById('additionalInfo').value;
+          
+          if (!ownerName || !contactInfo) {
+            alert('Owner name and contact information are required.');
+            return;
+          }
+          
+          try {
+            const response = await fetch('/api/vehicles', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                plateNumber,
+                ownerInfo: {
+                  ownerName,
+                  contactInfo,
+                  additionalInfo
+                }
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            alert(`Vehicle with plate ${plateNumber} added successfully!`);
+            
+            // Refresh detection to update UI
+            captureAndProcess();
+            
+          } catch (err) {
+            console.error('Error adding vehicle:', err);
+            alert('Failed to add vehicle to database: ' + err.message);
+          }
+        });
+        
+        // Cancel button event
+        document.getElementById('cancel-add-vehicle').addEventListener('click', () => {
+          updateActions({ plateNumber, isRegistered: false });
+        });
+      }
+      
+      // Clean up on page unload
+      window.addEventListener('beforeunload', async () => {
+        if (isStreamConnected) {
+          try {
+            await fetch('/api/start-stream', { method: 'DELETE' });
+          } catch (e) {
+            console.error('Failed to clean up stream:', e);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

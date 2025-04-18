@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Mode - Plate Recognition System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-green-600 text-white p-4 shadow-md">
+      <h1 class="text-2xl font-bold">Vehicle Number Plate Recognition System - Demo Mode</h1>
+    </header>
+    
+    <main class="container mx-auto p-4 flex-grow">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Demo Controls Section -->
+        <div class="lg:col-span-2">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Demo Controls</h2>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">License Plate Number</label>
+              <div class="flex space-x-2">
+                <select id="demo-plate" class="px-4 py-2 border border-gray-300 rounded flex-grow focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="ABC123">ABC123 (Registered)</option>
+                  <option value="XYZ789">XYZ789 (Registered)</option>
+                  <option value="DEF456">DEF456 (Not Registered)</option>
+                  <option value="GHI789">GHI789 (Not Registered)</option>
+                  <option value="JKL012">JKL012 (Not Registered)</option>
+                </select>
+                <button id="random-plate" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none">
+                  Random
+                </button>
+              </div>
+            </div>
+            
+            <div class="relative rounded-md overflow-hidden bg-black">
+              <div id="demo-image" class="w-full h-[480px] bg-gray-800 flex items-center justify-center">
+                <div class="bg-black bg-opacity-50 p-6 rounded-lg text-center">
+                  <div class="flex justify-center mb-4">
+                    <div class="bg-yellow-500 px-4 py-2 text-black font-bold text-xl rounded-md">
+                      <span id="plate-display">ABC123</span>
+                    </div>
+                  </div>
+                  <p class="text-white text-sm">Demo mode - Simulated vehicle plate</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center mt-4">
+              <div class="space-x-2">
+                <button id="change-plate" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none">
+                  Change Plate
+                </button>
+              </div>
+              
+              <button id="detect-button" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none">
+                Detect Plate
+              </button>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-500">
+              <p>This demo mode allows you to test the plate recognition system without a camera.</p>
+              <p>Select a plate number and click "Detect Plate" to simulate detection.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Results and Actions Section -->
+        <div class="space-y-6">
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Detection Results</h2>
+            <div id="results-container" class="flex items-center justify-center h-64 bg-gray-50 rounded-md border border-gray-200">
+              <p class="text-gray-500">No detection results yet</p>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Actions</h2>
+            <div id="actions-container" class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Auto Processing</h2>
+            <div class="p-4 bg-gray-50 rounded-md border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <input type="checkbox" id="auto-detect" class="mr-2">
+                  <label for="auto-detect">Process automatically</label>
+                </div>
+                <select id="interval-select" class="p-2 border border-gray-300 rounded">
+                  <option value="1000">Every 1 second</option>
+                  <option value="3000" selected>Every 3 seconds</option>
+                  <option value="5000">Every 5 seconds</option>
+                  <option value="10000">Every 10 seconds</option>
+                </select>
+              </div>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="font-medium">Detections:</span>
+                  <span id="detection-count" class="ml-2">0</span>
+                </div>
+                <div>
+                  <span class="font-medium">Last detection:</span>
+                  <span id="last-detection-time" class="ml-2">N/A</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/" class="bg-blue-500 text-white p-3 rounded text-center hover:bg-blue-600">
+          Camera Mode
+        </a>
+        <a href="/rtmp-hls-player.html" class="bg-blue-500 text-white p-3 rounded text-center hover:bg-blue-600">
+          Video Stream Mode
+        </a>
+        <a href="/api/health" target="_blank" class="bg-gray-500 text-white p-3 rounded text-center hover:bg-gray-600">
+          Check API Status
+        </a>
+      </div>
+    </main>
+    
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+      <div class="container mx-auto text-center">
+        <p>Vehicle Number Plate Recognition System - © 2025</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const demoPlateSelect = document.getElementById('demo-plate');
+      const randomPlateButton = document.getElementById('random-plate');
+      const changePlateButton = document.getElementById('change-plate');
+      const detectButton = document.getElementById('detect-button');
+      const plateDisplay = document.getElementById('plate-display');
+      const resultsContainer = document.getElementById('results-container');
+      const actionsContainer = document.getElementById('actions-container');
+      const autoDetectCheckbox = document.getElementById('auto-detect');
+      const intervalSelect = document.getElementById('interval-select');
+      const detectionCountElement = document.getElementById('detection-count');
+      const lastDetectionTimeElement = document.getElementById('last-detection-time');
+      
+      // Demo plate options
+      const randomPlates = [
+        'ABC123', 'XYZ789', 'DEF456', 'GHI789', 'JKL012', 
+        'MNO345', 'PQR678', 'STU901', 'VWX234', 'YZA567'
+      ];
+      
+      let detectionCount = 0;
+      let isProcessing = false;
+      let autoDetectInterval = null;
+      
+      // Update plate display
+      function updatePlateDisplay() {
+        plateDisplay.textContent = demoPlateSelect.value;
+      }
+      
+      // Initialize with selected plate
+      updatePlateDisplay();
+      
+      // Random plate selection
+      randomPlateButton.addEventListener('click', () => {
+        const randomIndex = Math.floor(Math.random() * randomPlates.length);
+        const randomPlate = randomPlates[randomIndex];
+        
+        // Find matching option or default to first
+        const option = Array.from(demoPlateSelect.options).find(opt => opt.value === randomPlate);
+        if (option) {
+          demoPlateSelect.value = randomPlate;
+        } else {
+          // If not in dropdown, use first option
+          demoPlateSelect.selectedIndex = 0;
+        }
+        
+        updatePlateDisplay();
+      });
+      
+      // Change plate manually
+      changePlateButton.addEventListener('click', updatePlateDisplay);
+      
+      // Update when select changes
+      demoPlateSelect.addEventListener('change', updatePlateDisplay);
+      
+      // Process with selected plate
+      detectButton.addEventListener('click', detectPlate);
+      
+      // Auto detection toggle
+      autoDetectCheckbox.addEventListener('change', () => {
+        if (autoDetectCheckbox.checked) {
+          // Get interval
+          const interval = parseInt(intervalSelect.value);
+          
+          // Start auto detection
+          autoDetectInterval = setInterval(() => {
+            if (!isProcessing) {
+              detectPlate();
+            }
+          }, interval);
+          
+          console.log(`Auto detection started (interval: ${interval}ms)`);
+        } else {
+          // Stop auto detection
+          if (autoDetectInterval) {
+            clearInterval(autoDetectInterval);
+            autoDetectInterval = null;
+            console.log('Auto detection stopped');
+          }
+        }
+      });
+      
+      // Interval change
+      intervalSelect.addEventListener('change', () => {
+        if (autoDetectInterval) {
+          // Restart with new interval
+          clearInterval(autoDetectInterval);
+          
+          const interval = parseInt(intervalSelect.value);
+          autoDetectInterval = setInterval(() => {
+            if (!isProcessing) {
+              detectPlate();
+            }
+          }, interval);
+          
+          console.log(`Auto detection interval updated: ${interval}ms`);
+        }
+      });
+      
+      // Detect plate function
+      async function detectPlate() {
+        if (isProcessing) return;
+        
+        isProcessing = true;
+        detectButton.disabled = true;
+        
+        // Loading indicator
+        resultsContainer.innerHTML = `
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          </div>
+        `;
+        
+        try {
+          // Get selected plate number
+          const plateNumber = demoPlateSelect.value;
+          
+          // Create dummy image data (empty 1x1 pixel image)
+          const dummyImageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+          
+          // Process with server
+          const response = await fetch('/api/process-frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              image: dummyImageData.split(',')[1],
+              demoPlate: plateNumber 
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          console.log('Received result:', result);
+          
+          // Update stats
+          detectionCount++;
+          detectionCountElement.textContent = detectionCount;
+          lastDetectionTimeElement.textContent = new Date().toLocaleTimeString();
+          
+          // Display results
+          displayResults(result);
+          updateActions(result);
+          
+        } catch (err) {
+          console.error('Error processing plate:', err);
+          resultsContainer.innerHTML = `
+            <div class="p-4 bg-red-100 text-red-700 rounded-md">
+              Failed to process: ${err.message}
+            </div>
+          `;
+        } finally {
+          isProcessing = false;
+          detectButton.disabled = false;
+        }
+      }
+      
+      // Display detection results
+      function displayResults(result) {
+        const { plateNumber, confidence, isRegistered, vehicleInfo, timestamp } = result;
+        
+        resultsContainer.innerHTML = `
+          <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h3 class="font-bold text-lg mb-2">Detected Plate</h3>
+              <div class="flex items-center justify-center p-4 bg-white rounded-md border border-gray-300">
+                <span class="font-mono text-xl font-bold">${plateNumber || 'No plate detected'}</span>
+              </div>
+              
+              ${plateNumber ? `
+                <div class="mt-2 text-sm text-gray-600">
+                  <span>Confidence: ${Math.round(confidence * 100)}%</span>
+                  <span> • </span>
+                  <span>Detected at: ${new Date(timestamp).toLocaleTimeString()}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="${isRegistered ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'} p-4 rounded-md">
+              <h3 class="font-bold text-lg mb-2">Database Match</h3>
+              ${isRegistered ? `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-green-700">✓ Vehicle is registered</p>
+                  ${vehicleInfo ? `
+                    <div class="mt-2 space-y-1">
+                      <p><span class="font-medium">Owner:</span> ${vehicleInfo.ownerName}</p>
+                      <p><span class="font-medium">Contact:</span> ${vehicleInfo.contactInfo}</p>
+                      ${vehicleInfo.additionalInfo ? `
+                        <p><span class="font-medium">Additional Info:</span> ${vehicleInfo.additionalInfo}</p>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="bg-white p-3 rounded-md border border-gray-200">
+                  <p class="font-semibold text-red-700">✗ Vehicle not found in database</p>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Update action panel
+      function updateActions(result) {
+        const { plateNumber, isRegistered } = result;
+        
+        if (!plateNumber) {
+          actionsContainer.innerHTML = `
+            <div class="p-4 bg-gray-50 rounded-md border border-gray-200 text-center">
+              <p class="text-gray-500">No plate detected yet</p>
+              <p class="text-sm text-gray-400 mt-1">Actions will appear when a plate is detected</p>
+            </div>
+          `;
+          return;
+        }
+        
+        if (isRegistered) {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Registered</span>
+              </div>
+              
+              <button
+                class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                onclick="alert('Vehicle details accessed')"
+              >
+                View Full Details
+              </button>
+              
+              <button
+                class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors"
+                onclick="alert('Log created for plate number: ${plateNumber}')"
+              >
+                Log Entry
+              </button>
+            </div>
+          `;
+        } else {
+          actionsContainer.innerHTML = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Vehicle Status:</span>
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Not Registered</span>
+              </div>
+              
+              <button
+                id="add-vehicle-btn"
+                class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Add to Database
+              </button>
+              
+              <button
+                class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors"
+                onclick="alert('Alert created for unregistered vehicle: ${plateNumber}')"
+              >
+                Create Alert
+              </button>
+            </div>
+          `;
+          
+          // Add vehicle form event
+          document.getElementById('add-vehicle-btn').addEventListener('click', () => {
+            showAddVehicleForm(plateNumber);
+          });
+        }
+      }
+      
+      // Show add vehicle form
+      function showAddVehicleForm(plateNumber) {
+        actionsContainer.innerHTML = `
+          <form id="add-vehicle-form" class="space-y-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
+              <input
+                type="text"
+                value="${plateNumber}"
+                disabled
+                class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Owner Name*</label>
+              <input
+                type="text"
+                id="ownerName"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Contact Info*</label>
+              <input
+                type="text"
+                id="contactInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Additional Info</label>
+              <textarea
+                id="additionalInfo"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                rows="2"
+              ></textarea>
+            </div>
+            
+            <div class="flex space-x-2">
+              <button
+                type="submit"
+                class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              >
+                Save
+              </button>
+              
+              <button
+                type="button"
+                id="cancel-add-vehicle"
+                class="flex-1 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        `;
+        
+        // Form submit event
+        document.getElementById('add-vehicle-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const ownerName = document.getElementById('ownerName').value;
+          const contactInfo = document.getElementById('contactInfo').value;
+          const additionalInfo = document.getElementById('additionalInfo').value;
+          
+          if (!ownerName || !contactInfo) {
+            alert('Owner name and contact information are required.');
+            return;
+          }
+          
+          try {
+            const response = await fetch('/api/vehicles', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                plateNumber,
+                ownerInfo: {
+                  ownerName,
+                  contactInfo,
+                  additionalInfo
+                }
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            alert(`Vehicle with plate ${plateNumber} added successfully!`);
+            
+            // Refresh detection to update UI
+            detectPlate();
+            
+          } catch (err) {
+            console.error('Error adding vehicle:', err);
+            alert('Failed to add vehicle to database: ' + err.message);
+          }
+        });
+        
+        // Cancel button event
+        document.getElementById('cancel-add-vehicle').addEventListener('click', () => {
+          updateActions({ plateNumber, isRegistered: false });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
