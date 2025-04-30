@@ -34,14 +34,14 @@ from utils import license_complies_format,format_license
 
 
 VEHICLES = {
-    "ABC123": {
-        "ownerName": "John Doe",
-        "contactInfo": "555-123-4567",
-        "additionalInfo": "Regular visitor",
+    "UP50AS4535": {
+        "ownerName": "xyz",
+        "contactInfo": "1234567890",
+        "additionalInfo": "faculty member",
         "registrationDate": "2024-10-15",
         "lastDetected": None
     },
-    "XYZ789": {
+    "MP33C3370": {
         "ownerName": "Jane Smith",
         "contactInfo": "555-987-6543",
         "additionalInfo": "VIP customer",
@@ -49,59 +49,6 @@ VEHICLES = {
         "lastDetected": None
     }
 }
-
-# def detect_license_plate(image, demo_plate=None):
-#     """
-#     A simplified function to detect license plates in an image.
-#     In production, this would use your actual model.
-    
-#     Args:
-#         image: The image data to process
-#         demo_plate: Optional parameter to force a specific plate number (for demo mode)
-#     """
-#     # if demo_plate:
-#     #     # Use the specified plate number for demo mode
-#     #     plate_number = demo_plate
-#     # else:
-#     #     # For regular detection, randomly return one of the known plates
-#     #     plate_number = random.choice(["ABC123", "XYZ789", "DEF456"])
-        
-#     # confidence = round(random.uniform(0.7, 0.98), 2)
-
-#     results = model.predict(image, save=True,conf=0.2)
-#     plate_number=""
-#     for result in results:
-#       boxes = result.boxes.xyxy  # [x1, y1, x2, y2]
-#       for box in boxes:          
-#         x1, y1, x2, y2 = map(int, box)  # convert to int
-#         cropped_plate = image[y1:y2, x1:x2]  # Crop the plate area
-#         gray_img = cv2.cvtColor(cropped_plate, cv2.COLOR_RGB2GRAY)
-#         detections = reader.readtext(gray_img)
-
-#         for detection in detections:
-#             bbox, text, score = detection
-#             text = text.upper().replace(' ', '').replace('.','').replace(',','')
-#             formatted = format_license(text)
-#             # print("printing detecttion",formatted)
-            
-#             if license_complies_format(formatted):
-#                 #save_to_db(formatted)
-#                 plate_number=formatted
-#             else:
-#               str=""
-#               if text is not None :
-#                   str=str+"none" +text
-#                   plate_number=str
-#               else: 
-#                   plate_number= "none"
-
-#             return {
-#                 "plateNumber": plate_number,
-#                 "confidence": score,
-#                 "isRegistered": plate_number in VEHICLES,
-#                 "timestamp": datetime.now().isoformat(),
-#                 "vehicleInfo": VEHICLES.get(plate_number)
-#             }
 
 def detect_license_plate(image, demo_plate=None):
     """

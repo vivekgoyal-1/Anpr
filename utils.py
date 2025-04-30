@@ -1,11 +1,6 @@
 
 import re
 
-# Mapping dictionaries for character conversion (common confusion)
-dict_char_to_int = {'O': '0', 'I': '1', 'J': '3', 'A': '4', 'G': '6', 'S': '5', 'B': '8', 'Z': '2'}
-dict_int_to_char = {'0': 'O', '1': 'I', '3': 'J', '4': 'A', '6': 'G', '5': 'S', '8': 'B', '2': 'Z'}
-
-
 # def write_csv(results, output_path):
 #     with open(output_path, 'w') as f:
 #         f.write('{},{},{},{},{},{},{}\n'.format('frame_nmr', 'car_id', 'car_bbox',
@@ -29,51 +24,85 @@ dict_int_to_char = {'0': 'O', '1': 'I', '3': 'J', '4': 'A', '6': 'G', '5': 'S', 
 #         f.close()
 
 
+#IND remover
+def clean_text(text):
+    """ Remove 'IND' if present anywhere in the text. """
+    return text.replace('IND', '').replace('ind', '').replace('Ind', '')
+
+#format checker
 def license_complies_format(text):
     """
     Check if the license plate text complies with Indian number plate format:
-    Two letters, two digits, one to three letters, four digits (e.g., KA01AB1234)
+    1. Traditional: Two letters, two digits, one to three letters, four digits (e.g., KA01AB1234)
+    2. BH Format: Two digits (year), 'BH', four digits, two uppercase letters (e.g., 23BH1234AB)
     """
-    pattern = r'^[A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{4}$'
-    #print("after format",text)
-    #print("true or false",re.match(pattern,text))
-    return re.match(pattern, text) is not None
+    traditional_pattern = r'^[A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{4}$'
+    bh_pattern = r'^[0-9]{2}BH[0-9]{4}[A-Z]{2}$'  # Excludes I and O
+    return re.match(traditional_pattern, text) is not None or re.match(bh_pattern, text) is not None
 
 
+# Mapping dictionaries for character conversion (common confusion)
+dict_char_to_int = {'O': '0', 'I': '1', 'J': '3', 'A': '4', 'G': '6', 'S': '5', 'B': '8', 'Z': '2'}
+dict_int_to_char = {'0': 'O', '1': 'I', '3': 'J', '4': 'A', '6': 'G', '5': 'S', '8': 'B', '2': 'Z'}
+
+#licence formatter
 def format_license(text):
+
     """
     Format and correct common misread characters in license plate text.
+    Supports both traditional and BH number plate formats.
     """
-    #print("before format",text)
-    # if len(text) < 9 or len(text) > 11:
-    #     return None  # Invalid length
-
-    # Step 3: Positional correction based on expected license format
+    
+    text=clean_text(text)
     length = len(text)
     corrected = ''
-    for i, ch in enumerate(text):
-        if i in [0, 1]:  # Should be letter (state code)
-            if ch in dict_int_to_char:
-                corrected += dict_int_to_char[ch]
-            else:
-                corrected += ch
-        elif i in [2, 3]:  # Should be digit (district code)
-            if ch in dict_char_to_int:
-                corrected += dict_char_to_int[ch]
-            else:
-                corrected += ch
-        elif 4 <= i <= 6 and i+4<length:  # Series (1–3 letters, usually)
-            if ch in dict_int_to_char:
-                corrected += dict_int_to_char[ch]
-            else:
-                corrected += ch
-        else:  # Last 4 digits
-            if ch in dict_char_to_int:
-                corrected += dict_char_to_int[ch]
-            else:
-                corrected += ch
-    
-    return corrected  # or None if you want to strictly filter
+
+    # Check for BH series (length == 10 and starts with 2 digits + BH)
+    if length == 10 and text[2:4] == 'BH':
+        for i, ch in enumerate(text):
+            if i in [0, 1]:  # Should be digit (year)
+                if ch in dict_char_to_int:
+                    corrected += dict_char_to_int[ch]
+                else:
+                    corrected += ch
+            elif i in [2, 3]:  # BH literal
+                corrected += ch.upper()
+            elif 4 <= i <= 7:  # 4-digit number
+                if ch in dict_char_to_int:
+                    corrected += dict_char_to_int[ch]
+                else:
+                    corrected += ch
+            else:  # Last 2 category letters
+                if ch in dict_int_to_char:
+                    corrected += dict_int_to_char[ch]
+                else:
+                    corrected += ch.upper()
+    else:
+        # Traditional format handling
+        for i, ch in enumerate(text):
+            if i in [0, 1]:  # State code letters
+                if ch in dict_int_to_char:
+                    corrected += dict_int_to_char[ch]
+                else:
+                    corrected += ch
+            elif i in [2, 3]:  # District digits
+                if ch in dict_char_to_int:
+                    corrected += dict_char_to_int[ch]
+                else:
+                    corrected += ch
+            elif 4 <= i <= 6 and i + 4 < length:  # Series
+                if ch in dict_int_to_char:
+                    corrected += dict_int_to_char[ch]
+                else:
+                    corrected += ch
+            else:  # Last 4 digits
+                if ch in dict_char_to_int:
+                    corrected += dict_char_to_int[ch]
+                else:
+                    corrected += ch
+
+    return corrected
+
 
 
 

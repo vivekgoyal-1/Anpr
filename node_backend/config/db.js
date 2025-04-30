@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+pepconst { Pool } = require('pg');
 
 // Create connection pool
 const pool = new Pool({
