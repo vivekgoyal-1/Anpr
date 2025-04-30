@@ -392,7 +392,10 @@ files = [
 ]
 
 [package.dependencies]
-numpy = {version = ">=1.26.0", markers = "python_version >= \"3.12\""}
+numpy = [
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.5", markers = "python_version == \"3.11\""},
+]
 
 [[package]]
 name = "pillow"
@@ -554,5 +557,5 @@ watchdog = ["watchdog (>=2.3)"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12,<4.0"
-content-hash = "90b69f8e6e5d9291e4ca0451e7f82c0e2f27e04ade5c7a62c45f0abe704d866d"
+python-versions = ">=3.11,<4.0"
+content-hash = "e1f63103e9ad1c57f412c74bc5750ac16a6509930ce944d022b596d162e49779"
