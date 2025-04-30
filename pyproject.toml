@@ -1,22 +1,29 @@
-[project]
+[tool.poetry]
 name = "repl-nix-workspace"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.12,<4.0"
+description = "anpr project"
+authors = ["vivekgoyal314@gmail.com"]
+readme = "README.md"
+packages = [{ include = "anprgit" }]
 
-dependencies = [
-    "flask>=3.1.0",
-    "flask-cors>=5.0.1",
-    "numpy>=2.2.4",
-    "opencv-python>=4.11.0.86",
-    "pillow>=11.2.1",
-    "requests>=2.32.3",
-]
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+flask = ">=3.1.0"
+flask-cors = ">=5.0.1"
+numpy = ">=2.2.4"
+opencv-python = ">=4.11.0.86"
+pillow = ">=11.2.1"
+requests = ">=2.32.3"
 
-[[tool.uv.index]]
+[tool.uv.index]
 explicit = true
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 
 [tool.uv.sources]
 AA-module = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
