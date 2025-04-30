@@ -2,7 +2,7 @@
 name = "repl-nix-workspace"
 version = "0.1.0"
 description = "anpr project"
-authors = ["vivekgoyal314@gmail.com"]
+authors = ["vivek <vivekgoyal314@gmail.com>"]
 readme = "README.md"
 packages = [{ include = "anprgit" }]
 
